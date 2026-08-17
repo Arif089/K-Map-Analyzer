@@ -1,0 +1,847 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>K-MAP Analyzer</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#07111f;
+  --panel:#0d1a2d;
+  --panel2:#101f34;
+  --panel3:#13243c;
+  --border:#29415f;
+  --text:#edf4ff;
+  --muted:#91a6c0;
+  --blue:#64b5ff;
+  --green:#38d6b0;
+  --gold:#ffc861;
+  --red:#ff6f7d;
+  --navy:#10243e;
+  --zero:#71849d;
+  --shadow:0 18px 50px rgba(0,0,0,.22);
+  --radius:16px;
+}
+body.light{
+  --bg:#f3f7fc;
+  --panel:#ffffff;
+  --panel2:#f7faff;
+  --panel3:#edf4fb;
+  --border:#cbd8e8;
+  --text:#14243a;
+  --muted:#60738c;
+  --blue:#1769aa;
+  --green:#087f69;
+  --gold:#a96700;
+  --red:#c53d4d;
+  --navy:#e7f0fa;
+  --zero:#6f8198;
+  --shadow:0 14px 38px rgba(38,65,95,.10);
+}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;transition:background .2s,color .2s}
+header{background:var(--header);border-bottom:1px solid var(--border);padding:18px 28px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:13px}.logo{width:46px;height:46px;border:2px solid var(--gold);border-radius:10px;display:grid;place-items:center;color:var(--gold);font-weight:900}
+header h1{margin:0;color:var(--text);font-size:24px}header p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.headerBtns{display:flex;gap:9px}.iconBtn{width:42px;height:42px;padding:0;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:9px;font-size:21px;cursor:pointer}
+.iconBtn:hover{border-color:var(--blue);color:var(--blue)}
+main{max-width:1550px;margin:25px auto;padding:0 26px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:24px;box-shadow:0 8px 25px #0002}
+.inputPanel{margin-bottom:22px}.inputTitle,.resultHead,.circuitHead{display:flex;justify-content:space-between;align-items:center}
+h2{margin:0 0 20px;color:var(--blue);font-size:18px;letter-spacing:.8px}.subtitle{margin:-13px 0 20px;color:var(--muted);font-size:13px}
+.inputRows{display:flex;flex-direction:column;gap:16px}.inputRow{display:grid;gap:16px;align-items:end}.inputRow1{grid-template-columns:minmax(300px,1.1fr) minmax(360px,1.5fr) minmax(280px,1.1fr);align-items:start}.inputRow2{grid-template-columns:1fr 1fr;align-items:start}.inputField{min-width:0}.inputField>label{height:18px;margin-bottom:8px;line-height:18px}.variableBtns button{height:40px;padding:8px 10px}.radio{height:40px;box-sizing:border-box;padding:10px 12px;display:flex;align-items:center}.preview{min-height:16px}.variableField{min-width:0}
+label{display:block;font-weight:700;font-size:13px;color:var(--text);margin-bottom:6px}
+input,select{width:100%;padding:11px 12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:8px;outline:none}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 2px color-mix(in srgb,var(--blue) 18%,transparent)}
+.variableBtns{display:flex;gap:6px}.variableBtns button{flex:1}
+button{border:1px solid var(--border);background:var(--panel2);color:var(--text);padding:10px 14px;border-radius:8px;font-weight:800;cursor:pointer}
+button:hover{border-color:var(--blue);color:var(--blue)}button.primary{border-color:var(--green);color:var(--green)}
+button.danger{border-color:var(--red);color:var(--red)}
+.variableBtns button.active{background:var(--navy);border-color:var(--blue);color:var(--blue)}
+.radioRow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.radio{padding:10px;border:1px solid var(--border);border-radius:8px;cursor:pointer}.radio.active{border-color:var(--blue);background:var(--navy)}
+.radio input{width:auto}.guide{display:flex;align-items:center;gap:18px;margin-top:0;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);color:var(--muted);font-size:12px;flex-wrap:wrap}
+.inputActions{display:flex;justify-content:flex-end;gap:9px;margin-top:0}.err{color:var(--red);font-weight:700;margin-top:9px}
+.resultsArea{display:none}.resultsArea.show{display:block}
+.topResults{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,.8fr);gap:22px}
+.kmapCard,.truth{min-height:430px}.kmapWrap{overflow:auto;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:22px;display:flex;justify-content:center;align-items:center;min-height:330px}
+table.kmap{border-collapse:collapse;margin:auto;color:var(--text)}table.kmap th,table.kmap td{border:1px solid var(--border);text-align:center;min-width:70px;height:62px;padding:8px}
+table.kmap th{background:var(--navy);color:var(--blue)}table.kmap td.one{background:color-mix(in srgb,var(--green) 14%,var(--panel2));color:var(--green);font-weight:900}
+table.kmap td.dc{background:color-mix(in srgb,var(--gold) 15%,var(--panel2));color:var(--gold);font-weight:900}table.kmap td.zero{color:var(--zero)}
+.klabel{font-size:10px;color:var(--muted)}.legend{display:flex;gap:18px;justify-content:center;margin-top:14px;color:var(--muted);font-size:12px}.dot{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}.green{background:var(--green)}.yellow{background:var(--gold)}.gray{background:var(--zero)}
+.truth table{width:100%;border-collapse:collapse}.truth th,.truth td{border:1px solid var(--border);padding:6px;text-align:center}.truth th{background:var(--navy);color:var(--blue)}.truth td.one{color:var(--green)}.truth td.dc{color:var(--gold)}.truth td.zero{color:var(--zero)}
+.resultCard{margin-top:22px}.expr{font:25px Consolas,monospace;color:var(--gold);background:var(--panel2);border:1px solid var(--border);padding:14px;border-radius:9px;overflow:auto}.meta{color:var(--muted);font-size:12px;line-height:1.6;margin-top:10px}
+.circuitCard{margin-top:22px}.badge{border:1px solid var(--blue);color:var(--blue);padding:6px 10px;border-radius:7px;font-weight:800;font-size:12px}
+#svgbox{min-height:650px;overflow:auto;background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:15px;display:flex;justify-content:center;align-items:center}
+.circuitBottom{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:15px}.note{font-size:12px;color:var(--muted)}
+.preview{color:var(--green);font-size:12px;margin-top:6px}.statusDot{width:10px;height:10px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+footer{text-align:center;color:var(--muted);padding:30px}
+@media(max-width:1100px){.inputRow1{grid-template-columns:1fr 1fr}.inputRow2{grid-template-columns:1fr 1fr;align-items:start}.topResults{grid-template-columns:1fr}}
+@media(max-width:650px){main{padding:0 12px}.card{padding:18px}.inputRow1,.inputRow2{grid-template-columns:1fr}.guide{flex-direction:column;gap:5px;align-items:flex-start}.radioRow{grid-template-columns:1fr}.circuitBottom{flex-direction:column;align-items:stretch}.resultHeadEnhanced{align-items:flex-start;flex-direction:column}.copyBtn{width:100%}}
+
+.cleanInputGrid{grid-template-columns:1.05fr 1.25fr 1fr 1.25fr 1.1fr;gap:14px}
+.cleanInputGrid>div{min-width:0}
+.varBlock,.nameBlock,.typeBlock,.termsBlock,.dcBlock{min-width:0}
+@media(max-width:1100px){.cleanInputGrid{grid-template-columns:1fr 1fr}.termsBlock,.dcBlock{margin-top:4px}}
+@media(max-width:650px){.cleanInputGrid{grid-template-columns:1fr}}
+
+.downloadBtns{display:flex;gap:10px;align-items:center}
+.downloadBtns button{padding:9px 14px;border:1px solid var(--border);border-radius:8px;background:var(--panel2);color:var(--text);font-weight:700;cursor:pointer}
+.downloadBtns button:hover{border-color:var(--accent);color:var(--accent)}
+.circuitBottom{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+
+.resultHeadEnhanced{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.copyBtn{padding:8px 12px;border:1px solid var(--border);background:var(--panel2);color:var(--text);border-radius:8px;font-weight:800;cursor:pointer}
+.copyBtn:hover{border-color:var(--green);color:var(--green)}
+.copyStatus{min-height:18px;margin-top:8px;color:var(--green);font-size:12px;font-weight:700}
+.card{transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+.card:hover{border-color:color-mix(in srgb,var(--blue) 55%,var(--border));box-shadow:0 8px 24px rgba(0,0,0,.08)}
+
+/* ===== K-MAP Analyzer visual refresh ===== */
+html{scroll-behavior:smooth}
+body{
+  background:
+    radial-gradient(circle at 8% 0%, rgba(100,181,255,.08), transparent 30%),
+    radial-gradient(circle at 92% 12%, rgba(56,214,176,.06), transparent 28%),
+    var(--bg);
+  color:var(--text);
+  letter-spacing:.01em;
+}
+body.light{
+  background:
+    radial-gradient(circle at 8% 0%, rgba(23,105,170,.06), transparent 30%),
+    radial-gradient(circle at 92% 12%, rgba(8,127,105,.05), transparent 28%),
+    var(--bg);
+}
+main{max-width:1440px;margin:auto}
+.card{
+  background:linear-gradient(145deg,var(--panel),var(--panel2));
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+header,.hero{
+  position:relative;
+  overflow:hidden;
+}
+header:after,.hero:after{
+  content:"";
+  position:absolute;
+  inset:auto -10% -70% 30%;
+  height:180px;
+  background:radial-gradient(ellipse,rgba(100,181,255,.10),transparent 65%);
+  pointer-events:none;
+}
+h1,h2{letter-spacing:-.02em}
+h1{
+  font-size:clamp(28px,4vw,44px);
+  margin-bottom:8px;
+}
+h2{
+  font-size:17px;
+  color:var(--text);
+}
+input,select{
+  height:44px;
+  box-sizing:border-box;
+  border-radius:10px;
+  border-color:var(--border);
+  background:rgba(0,0,0,.10);
+  transition:border-color .16s,box-shadow .16s,transform .16s;
+}
+body.light input,body.light select{background:var(--panel2)}
+input:hover,select:hover{border-color:color-mix(in srgb,var(--blue) 65%,var(--border))}
+input:focus,select:focus{
+  transform:translateY(-1px);
+  border-color:var(--blue);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--blue) 15%,transparent);
+}
+button{
+  min-height:42px;
+  border-radius:10px;
+  transition:transform .14s,box-shadow .14s,border-color .14s,background .14s;
+}
+button:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,0,0,.12)}
+button:active{transform:translateY(0)}
+button.primary{
+  background:color-mix(in srgb,var(--green) 10%,var(--panel2));
+  border-color:var(--green);
+}
+button.danger{
+  background:color-mix(in srgb,var(--red) 7%,var(--panel2));
+}
+.variableBtns{gap:8px}
+.variableBtns button{
+  min-width:46px;
+  border-radius:10px;
+}
+.variableBtns button.active{
+  background:linear-gradient(145deg,var(--navy),var(--panel3));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 22%,transparent);
+}
+.radioRow{gap:10px}
+.radio{
+  min-height:44px;
+  display:flex;
+  align-items:center;
+  box-sizing:border-box;
+  border-radius:10px;
+  background:var(--panel2);
+}
+.radio.active{
+  background:linear-gradient(145deg,var(--navy),var(--panel3));
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--blue) 18%,transparent);
+}
+.guide{
+  background:linear-gradient(90deg,var(--panel3),var(--panel2));
+  border-color:var(--border);
+  border-radius:12px;
+}
+.inputActions{
+  padding-top:2px;
+}
+.inputActions button{
+  min-width:92px;
+}
+.resultsArea{animation:riseIn .32s ease both}
+@keyframes riseIn{
+  from{opacity:0;transform:translateY(10px)}
+  to{opacity:1;transform:none}
+}
+.kmapCard,.truth,.resultCard,.circuitCard{
+  overflow:hidden;
+}
+.kmapWrap,#svgbox{
+  background:
+    linear-gradient(transparent 31px,rgba(127,145,168,.035) 32px),
+    linear-gradient(90deg,transparent 31px,rgba(127,145,168,.035) 32px),
+    var(--panel2);
+  background-size:32px 32px;
+}
+table.kmap th,.truth th{
+  background:linear-gradient(145deg,var(--navy),var(--panel3));
+}
+table.kmap td{
+  background:color-mix(in srgb,var(--panel2) 96%,var(--blue));
+}
+table.kmap td.one{
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 25%,transparent);
+}
+table.kmap td.dc{
+  box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--gold) 25%,transparent);
+}
+.expr{
+  background:linear-gradient(135deg,var(--panel3),var(--panel2));
+  border-color:color-mix(in srgb,var(--gold) 25%,var(--border));
+  box-shadow:inset 0 0 24px rgba(255,200,97,.025);
+}
+.circuitCard #svgbox{
+  min-height:620px;
+}
+.circuitBottom{
+  padding:0 2px 2px;
+}
+.downloadBtns button{
+  background:var(--panel3);
+}
+.footerDot{color:var(--green);margin:0 5px}footer{
+  opacity:.8;
+  font-size:12px;
+}
+.statusDot{
+  box-shadow:0 0 0 5px color-mix(in srgb,var(--green) 10%,transparent),0 0 18px var(--green);
+}
+.copyBtn{
+  background:var(--panel3);
+}
+@media(max-width:700px){
+  .card{border-radius:13px}
+  .circuitCard #svgbox{min-height:500px}
+}
+
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">DLD</div>
+    <div><h1>K-MAP Analyzer</h1><p>Simplify • Visualize • Realize</p></div>
+  </div>
+  <div class="headerBtns">
+    <button class="iconBtn" id="themeBtn" title="Change theme" aria-label="Change theme" onclick="toggleTheme()">☾</button>
+    <button class="iconBtn" title="Full screen" aria-label="Full screen" onclick="toggleFullscreen()">⛶</button>
+  </div>
+</header>
+<main>
+  <section class="card inputPanel" id="inputPanel">
+    <div class="inputTitle">
+      <div>
+        <h2>INPUT</h2>
+        <p class="subtitle">Define the Boolean function you want to simplify.</p>
+      </div>
+      <span class="statusDot"></span>
+    </div>
+
+    <div class="inputRows">
+      <div class="inputRow inputRow1">
+        <div class="inputField variableField">
+          <label>Number of Variables</label>
+          <input type="hidden" id="n" value="3">
+          <div class="variableBtns">
+            <button id="v1" onclick="setVars(1)">1</button>
+            <button id="v2" onclick="setVars(2)">2</button>
+            <button id="v3" onclick="setVars(3)">3</button>
+            <button id="v4" onclick="setVars(4)">4</button>
+            <button id="v5" onclick="setVars(5)">5</button>
+          </div>
+        </div>
+
+        <div class="inputField">
+          <label>Variable Names</label>
+          <input id="names" value="A,B,C,D,E" oninput="updatePreview()">
+          <div id="varPreview" class="preview"></div>
+        </div>
+
+        <div class="inputField functionField">
+          <label>Function Type</label>
+          <div class="radioRow">
+            <label class="radio active" id="sopRadio"><input type="radio" name="ft" value="sop" checked onchange="updateType()"> SOP</label>
+            <label class="radio" id="posRadio"><input type="radio" name="ft" value="pos" onchange="updateType()"> POS</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="inputRow inputRow2">
+        <div class="inputField">
+          <label id="termsLabel">Minterms</label>
+          <input id="terms" placeholder="0,1,2,5">
+        </div>
+
+        <div class="inputField">
+          <label>Don't-Care Terms</label>
+          <input id="dc" placeholder="3,7">
+        </div>
+      </div>
+
+      <div class="guide">
+        <b>QUICK GUIDE</b>
+        <span>• SOP → enter minterms where F = 1</span>
+        <span>• POS → enter maxterms where F = 0</span>
+        <span>• Don't-cares may be used as 0 or 1</span>
+      </div>
+
+      <div class="inputActions">
+        <button onclick="example()">Example</button>
+        <button class="primary" onclick="generate()">Generate</button>
+        <button class="danger" onclick="clearAll()">Clear</button>
+      </div>
+
+    <div id="error" class="err"></div>
+  </section>
+
+  <section id="resultsArea" class="resultsArea" hidden>
+    <div class="topResults">
+      <div class="card kmapCard" id="kmapCard">
+        <h2>KARNAUGH MAP TABLE</h2>
+        <div id="km" class="kmapWrap"></div>
+        <div class="legend">
+          <span><i class="dot green"></i>1</span>
+          <span><i class="dot yellow"></i>Don't Care</span>
+          <span><i class="dot gray"></i>0</span>
+        </div>
+      </div>
+
+      <div class="card truth" id="truthCard">
+        <h2>TRUTH TABLE</h2>
+        <div id="truth"></div>
+      </div>
+    </div>
+
+    <div class="card resultCard" id="rescard">
+      <div class="resultHead resultHeadEnhanced">
+        <h2 id="resultTitle">SIMPLIFIED EXPRESSION</h2>
+        <button class="copyBtn" id="copyExprBtn" onclick="copyExpression()" title="Copy the simplified expression">Copy Expression</button>
+      </div>
+      <div id="sop"></div><div id="pos" hidden></div>
+      <div id="copyStatus" class="copyStatus" aria-live="polite"></div>
+    </div>
+
+    <div class="card circuitCard" id="circuitCard">
+      <div class="circuitHead">
+        <h2 id="circuitTitle">GATE-LEVEL CIRCUIT</h2>
+      </div>
+      <div id="svgbox"></div>
+      <div class="circuitBottom">
+        <span class="note">Only the selected form is shown.</span><div class="downloadBtns"><button onclick="saveSVG()">⇩ SVG</button><button onclick="downloadReport()">⇩ Report</button></div>
+        
+      </div>
+    </div>
+  </section>
+
+  <footer>Digital Logic Design • K-MAP Analyzer <span class="footerDot">•</span> Interactive Boolean Simplification</footer>
+</main>
+
+<script>
+"use strict";
+var S={};
+
+function bits(x,n){return x.toString(2).padStart(n,"0").split("");}
+function gray(x){return x^(x>>1);}
+function parse(s,max){
+  if(!s.trim()) return [];
+  var a=s.split(/[\s,]+/).filter(Boolean).map(Number);
+  if(a.some(function(x){return !Number.isInteger(x)||x<0||x>=max;}))
+    throw Error("Every term must be an integer from 0 to "+(max-1)+".");
+  return [...new Set(a)];
+}
+function combine(a,b){
+  var d=0,r="";
+  for(var i=0;i<a.length;i++){
+    if(a[i]===b[i]) r+=a[i];
+    else if(a[i]!=="-"&&b[i]!=="-"){d++;r+="-";}
+    else return null;
+  }
+  return d===1?r:null;
+}
+function covers(p,m){
+  var b=bits(m,p.length);
+  for(var i=0;i<p.length;i++) if(p[i]!=="-"&&p[i]!==b[i]) return false;
+  return true;
+}
+function primes(n,required,dc){
+  var all=[...new Set(required.concat(dc))], groups={};
+  all.forEach(function(m){
+    var k=bits(m,n).filter(function(x){return x==="1";}).length;
+    if(!groups[k])groups[k]=[];
+    groups[k].push({p:bits(m,n).join(""),used:false});
+  });
+  var P=[];
+  while(Object.keys(groups).length){
+    var next={}, made=false, ks=Object.keys(groups).map(Number).sort(function(a,b){return a-b;});
+    for(var ii=0;ii<ks.length-1;ii++){
+      if(ks[ii+1]!==ks[ii]+1)continue;
+      groups[ks[ii]].forEach(function(a){
+        groups[ks[ii+1]].forEach(function(b){
+          var c=combine(a.p,b.p);
+          if(c){
+            made=true;a.used=true;b.used=true;
+            var k=(c.match(/1/g)||[]).length;
+            if(!next[k])next[k]=[];
+            if(!next[k].some(function(z){return z.p===c;}))next[k].push({p:c,used:false});
+          }
+        });
+      });
+    }
+    Object.keys(groups).forEach(function(k){
+      groups[k].forEach(function(a){
+        if(!a.used&&!P.some(function(z){return z.p===a.p;}))P.push(a);
+      });
+    });
+    groups=next;
+    if(!made)break;
+  }
+  return P.map(function(x){return x.p;});
+}
+function minimize(n,required,dc){
+  if(required.length===0)return [];
+  var P=primes(n,required,dc), cover={};
+  required.forEach(function(m){cover[m]=[];P.forEach(function(p,i){if(covers(p,m))cover[m].push(i);});});
+  var chosen=new Set();
+  Object.keys(cover).forEach(function(m){if(cover[m].length===1)chosen.add(cover[m][0]);});
+  function coveredBy(ch,m){for(var i of ch)if(covers(P[i],m))return true;return false;}
+  var left=required.filter(function(m){return !coveredBy(chosen,m);});
+  if(left.length){
+    var best=null;
+    function search(pos,ch){
+      if(best&&ch.size>=best.size)return;
+      while(pos<left.length&&coveredBy(ch,left[pos]))pos++;
+      if(pos===left.length){best=new Set(ch);return;}
+      var m=left[pos];
+      cover[m].forEach(function(i){var nset=new Set(ch);nset.add(i);search(pos+1,nset);});
+    }
+    search(0,new Set(chosen));
+    if(best)chosen=best;
+  }
+  return [...chosen].map(function(i){return P[i];});
+}
+function sopTerm(p,names){
+  var a=[];
+  p.split("").forEach(function(v,i){if(v!=="-")a.push(v==="1"?names[i]:names[i]+"'");});
+  return a.length?a.join(""):"1";
+}
+function posTerm(p,names){
+  var a=[];
+  p.split("").forEach(function(v,i){if(v!=="-")a.push(v==="0"?names[i]:names[i]+"'");});
+  return "("+a.join(" + ")+")";
+}
+function sopExpr(P,n){return P.length?P.map(function(p){return sopTerm(p,n);}).join(" + "):"0";}
+function posExpr(P,n){return P.length?P.map(function(p){return posTerm(p,n);}).join(""):"1";}
+
+function kmap(n,ones,dc){
+ var rb=Math.floor(n/2), cb=n-rb, R=1<<rb, C=1<<cb;
+ var rowName=(n===1?"A":namesForKMap(n,rb,false));
+ var colName=(n===1?"":namesForKMap(n,cb,true));
+ var h='';
+ h+='<table class="kmap"><tr><th class="corner">'+rowName+' \\ '+colName+'</th>';
+ for(var j=0;j<C;j++) h+='<th>'+gray(j).toString(2).padStart(cb,"0")+'</th>';
+ h+='</tr>';
+ for(var i=0;i<R;i++){
+   var rbv=gray(i).toString(2).padStart(rb,"0");
+   h+='<tr><th>'+rbv+'</th>';
+   for(var j=0;j<C;j++){
+     var cbv=gray(j).toString(2).padStart(cb,"0");
+     var m=(gray(i)<<cb)|gray(j);
+     var v=ones.indexOf(m)>=0?"1":dc.indexOf(m)>=0?"X":"0";
+     var cl=v==="1"?"one":v==="X"?"dc":"zero";
+     h+='<td class="'+cl+'">'+v+'<div class="klabel">m'+m+'</div></td>';
+   }
+   h+='</tr>';
+ }
+ return h+'</table>';
+}
+function namesForKMap(n,count,isColumn){
+ var names=document.getElementById("names").value.split(",").map(function(x){return x.trim();}).filter(Boolean);
+ if(names.length<n) names=["A","B","C","D","E"].slice(0,n);
+ if(n===1)return names[0];
+ if(n===2)return isColumn?names[1]:names[0];
+ if(n===3)return isColumn?names.slice(1).join(""):names[0];
+ if(n===4)return isColumn?names.slice(2,4).join(""):names.slice(0,2).join("");
+ if(n===5)return isColumn?names.slice(2,5).join(""):names.slice(0,2).join("");
+ return names.slice(0,count).join("");
+}
+
+function setVars(n){
+ document.getElementById("n").value=n;
+ document.getElementById("names").value=["A","B","C","D","E"].slice(0,n).join(",");
+ for(var i=1;i<=5;i++){var el=document.getElementById("v"+i);if(el)el.className=i===n?"active":"";}
+ updatePreview();
+}
+function updatePreview(){
+ var n=Number(document.getElementById("n").value);
+ var names=document.getElementById("names").value.split(",").map(function(x){return x.trim();}).filter(Boolean).slice(0,n);
+ document.getElementById("varPreview").textContent="Variables: "+names.join(", ");
+}
+function updateType(){
+ var r=document.querySelector('input[name="ft"]:checked');
+ if(!r)return;
+ var type=r.value;
+ document.getElementById("sopRadio").className=type==="sop"?"radio active":"radio";
+ document.getElementById("posRadio").className=type==="pos"?"radio active":"radio";
+ document.getElementById("termsLabel").textContent=type==="sop"?"Minterms":"Maxterms";
+ document.getElementById("resultTitle").textContent="SIMPLIFIED EXPRESSION";
+ 
+ document.getElementById("circuitTitle").textContent="GATE-LEVEL CIRCUIT";
+ 
+}
+function clearAll(){
+ document.getElementById("terms").value="";
+ document.getElementById("dc").value="";
+ document.getElementById("error").textContent="";
+ document.getElementById("resultsArea").hidden=true;
+ document.getElementById("resultsArea").classList.remove("show");
+ document.getElementById("km").innerHTML="";
+ document.getElementById("truth").innerHTML="";
+ document.getElementById("sop").innerHTML="";
+ document.getElementById("pos").innerHTML="";
+ document.getElementById("svgbox").innerHTML="";
+ document.getElementById("copyStatus").textContent="";
+ S={};
+}
+function generate(){
+ try{
+  var n=Number(document.getElementById("n").value),max=1<<n;
+  var names=document.getElementById("names").value.split(",").map(function(x){return x.trim();}).filter(Boolean);
+  if(names.length!==n)throw Error("Enter exactly "+n+" variable names separated by commas.");
+  var type=document.querySelector('input[name="ft"]:checked').value;
+  var input=parse(document.getElementById("terms").value,max);
+  var dc=parse(document.getElementById("dc").value,max);
+  if(input.some(function(x){return dc.indexOf(x)>=0;}))throw Error("A term cannot be both a required term and a don't-care.");
+  var all=Array.from({length:max},function(_,i){return i;});
+  var ones=type==="sop"?input:all.filter(function(x){return input.indexOf(x)<0&&dc.indexOf(x)<0;});
+  var zeros=type==="pos"?input:all.filter(function(x){return input.indexOf(x)<0&&dc.indexOf(x)<0;});
+  S={n:n,names:names,ones:ones,zeros:zeros,dc:dc,sop:minimize(n,ones,dc),pos:minimize(n,zeros,dc),out:"F",type:type};
+
+  document.getElementById("km").innerHTML=kmap(n,ones,dc);
+  document.getElementById("sop").innerHTML="<div class='expr'>F = "+sopExpr(S.sop,names)+"</div><div class='meta'>Minterms: "+ones.join(", ")+"<br>Don't-care terms: "+(dc.length?dc.join(", "):"None")+"</div>";
+  document.getElementById("pos").innerHTML="<div class='expr'>F = "+posExpr(S.pos,names)+"</div><div class='meta'>Maxterms: "+zeros.join(", ")+"<br>Don't-care terms: "+(dc.length?dc.join(", "):"None")+"</div>";
+  document.getElementById("sop").hidden=type!=="sop";
+  document.getElementById("pos").hidden=type!=="pos";
+  makeTruthTable(n,ones,dc);
+  updateType();
+  circuit(type);
+  document.getElementById("resultsArea").hidden=false;
+  document.getElementById("resultsArea").classList.add("show");
+  document.getElementById("error").textContent="";
+  window.scrollTo({top:document.getElementById("resultsArea").offsetTop-15,behavior:"smooth"});
+ }catch(e){document.getElementById("error").textContent=e.message;}
+}
+function example(){
+ var examples=[
+  {n:2,names:"A,B",type:"sop",terms:"1,2,3",dc:""},
+  {n:3,names:"A,B,C",type:"sop",terms:"1,2,3,5,7",dc:"0"},
+  {n:4,names:"A,B,C,D",type:"sop",terms:"0,1,2,5,6,7,8,9,10,14",dc:"3,11,15"},
+  {n:5,names:"A,B,C,D,E",type:"pos",terms:"1,4,7,12,18,25",dc:"0,3,9,17"}
+ ];
+ var idx=Number(localStorage.getItem("dldExampleIndex")||"0");
+ var ex=examples[idx%examples.length];
+ localStorage.setItem("dldExampleIndex",String((idx+1)%examples.length));
+ setVars(ex.n);
+ document.getElementById("names").value=ex.names;
+ document.querySelector('input[name="ft"][value="'+ex.type+'"]').checked=true;
+ document.getElementById("terms").value=ex.terms;
+ document.getElementById("dc").value=ex.dc;
+ updatePreview();updateType();generate();
+}
+function toggleTheme(){
+ var light=!document.body.classList.contains("light");
+ document.body.classList.toggle("light",light);
+ localStorage.setItem("dldTheme",light?"light":"dark");
+ document.getElementById("themeBtn").textContent=light?"☼":"☾";
+ if(S&&S.n)circuit(S.type);
+}
+function toggleFullscreen(){
+ var p=document.documentElement;
+ if(!document.fullscreenElement){(p.requestFullscreen||p.webkitRequestFullscreen||p.msRequestFullscreen).call(p).catch(function(){});}
+ else{(document.exitFullscreen||document.webkitExitFullscreen||document.msExitFullscreen).call(document);}
+}
+function makeTruthTable(n,ones,dc){
+ var names=S.names,h="<table><tr>";
+ names.forEach(function(x){h+="<th>"+x+"</th>";}); h+="<th>F</th></tr>";
+ for(var m=0;m<(1<<n);m++){
+   var b=bits(m,n),v=dc.indexOf(m)>=0?"X":(ones.indexOf(m)>=0?"1":"0");
+   h+="<tr>";b.forEach(function(x){h+="<td>"+x+"</td>";});
+   h+='<td class="'+(v==="1"?"one":v==="X"?"dc":"zero")+'">'+v+"</td></tr>";
+ }
+ document.getElementById("truth").innerHTML=h+"</table>";
+}
+
+function tab(t){
+ document.getElementById("sop").hidden=t!=="sop";document.getElementById("pos").hidden=t!=="pos";
+ document.getElementById("st").className=t==="sop"?"active":"";document.getElementById("pt").className=t==="pos"?"active":"";
+}
+function svgTheme(){
+ var dark=document.body.classList.contains("dark");
+ return {bg:dark?"#121a19":"#fffdfa",text:dark?"#e9eee9":"#292722",muted:dark?"#94a39d":"#746e63",accent:dark?"#e3b85b":"#876018",wire:dark?"#8bcfc1":"#347d70",wire2:dark?"#e5aa4d":"#a26710"};
+}
+function gateAnd(x,y,w,h,stroke,fill){
+  return '<path d="M '+x+' '+y+' L '+(x+w/2)+' '+y+
+    ' A '+(w/2)+' '+(h/2)+' 0 0 1 '+(x+w/2)+' '+(y+h)+
+    ' L '+x+' '+(y+h)+' Z" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.5"/>'+
+    '<text x="'+(x+w*0.36)+'" y="'+(y+h/2+5)+'" text-anchor="middle" font-size="12" font-weight="800" fill="'+stroke+'">AND</text>';
+}
+function gateOr(x,y,w,h,stroke,fill){
+  return '<path d="M '+x+' '+y+
+    ' Q '+(x+34)+' '+(y+h/2)+' '+x+' '+(y+h)+
+    ' Q '+(x+62)+' '+(y+h)+' '+(x+w)+' '+(y+h/2)+
+    ' Q '+(x+62)+' '+y+' '+x+' '+y+' Z" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.5"/>'+
+    '<text x="'+(x+w*0.48)+'" y="'+(y+h/2+5)+'" text-anchor="middle" font-size="12" font-weight="800" fill="'+stroke+'">OR</text>';
+}
+function gateNot(x,y,stroke,fill){
+  return '<path d="M '+x+' '+y+' L '+x+' '+(y+36)+' L '+(x+43)+' '+(y+18)+' Z" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.3"/>'+
+         '<circle cx="'+(x+49)+'" cy="'+(y+18)+'" r="4.7" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.3"/>'+
+         '<text x="'+(x+21)+'" y="'+(y+56)+'" text-anchor="middle" font-size="10" font-weight="800" fill="'+stroke+'">NOT</text>';
+}
+
+function termToExpression(term,names,kind){
+  var parts=[];
+  for(var i=0;i<term.length;i++){
+    if(term[i]==="-") continue;
+    var n=names[i];
+    if(kind==="sop"){
+      parts.push(term[i]==="0" ? n+"'" : n);
+    }else{
+      parts.push(term[i]==="0" ? n : n+"'");
+    }
+  }
+  if(kind==="sop") return parts.join("");
+  return "("+parts.join("+")+")";
+}
+
+function circuit(kind){
+  var P=kind==="sop"?S.sop:S.pos, names=S.names;
+  var light=document.body.classList.contains("light");
+  var bg=light?"#ffffff":"#0b1424";
+  var text=light?"#17263d":"#eef4ff";
+  var rail=light?"#8394aa":"#52627a";
+  var signal=light?"#008c76":"#25cbb0";
+  var gate=light?"#1765ac":"#f0bc58";
+  var fill=light?"#ffffff":"#101b2b";
+
+  // A complemented rail is created only if the selected expression actually
+  // uses a complemented literal for that variable.
+  var needsInv=names.map(function(_,idx){
+    return P.some(function(term){
+      var v=term[idx];
+      return v!=="-" && ((kind==="sop"&&v==="0")||(kind==="pos"&&v==="1"));
+    });
+  });
+
+  var left=72;
+  var varGap=names.length<=2?175:(names.length===3?155:(names.length===4?145:135));
+  var pairGap=48;
+  var termGap=P.length<=1?0:(P.length<=3?145:125);
+  var firstTermY=P.length===1?300:(P.length>=4?170:300-((P.length-1)*termGap/2));
+  var termCenters=[];
+  for(var i=0;i<P.length;i++) termCenters.push(P.length===1?300:firstTermY+i*termGap);
+
+  var gateX=left+(names.length-1)*varGap+185;
+  var gateW=108, gateH=66;
+  var finalX=gateX+315, finalW=122;
+  var finalY=termCenters.length?(termCenters[0]+termCenters[termCenters.length-1])/2:300;
+  var finalH=Math.max(105,(P.length-1)*termGap+80);
+  var railBottom=Math.max((termCenters.length?termCenters[termCenters.length-1]:300)+155,505);
+  var H=Math.max(620,railBottom+75,finalY+finalH/2+75);
+  var W=finalX+280;
+  var equation=kind==="sop"?sopExpr(S.sop,names):posExpr(S.pos,names);
+
+  var svg='<svg id="svg" xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+
+    '<rect width="100%" height="100%" fill="'+bg+'"/>'+
+    '<text x="'+(W/2)+'" y="28" text-anchor="middle" font-size="15" font-weight="800" fill="'+gate+'">F = '+equation+'</text>';
+
+  var rails=[];
+  names.forEach(function(name,i){
+    var x=left+i*varGap;
+    var nx=x+pairGap;
+    rails.push({normal:x,inv:nx});
+
+    svg+='<text x="'+x+'" y="54" text-anchor="middle" font-size="16" font-weight="800" fill="'+text+'">'+name+'</text>'+
+         '<line x1="'+x+'" y1="70" x2="'+x+'" y2="'+railBottom+'" stroke="'+rail+'" stroke-width="2.2"/>';
+
+    if(needsInv[i]){
+      var invY=90;
+      svg+='<line x1="'+x+'" y1="'+invY+'" x2="'+(x+28)+'" y2="'+invY+'" stroke="'+rail+'" stroke-width="2.4"/>'+
+        gateNot(x+28,invY-18,gate,fill)+
+        '<line x1="'+(x+79)+'" y1="'+invY+'" x2="'+nx+'" y2="'+invY+'" stroke="'+signal+'" stroke-width="2.4"/>'+
+        '<line x1="'+nx+'" y1="'+invY+'" x2="'+nx+'" y2="'+railBottom+'" stroke="'+rail+'" stroke-width="2.2"/>';
+    }
+  });
+
+  P.forEach(function(term,ti){
+    var cy=termCenters[ti], gy=cy-gateH/2;
+    var lits=[];
+    term.split("").forEach(function(v,idx){if(v!=="-")lits.push({value:v,index:idx});});
+
+    // A single literal is a direct wire. No meaningless 1-input gate.
+    if(lits.length===1){
+      var l=lits[0], r=rails[l.index];
+      var complemented=((kind==="sop"&&l.value==="0")||(kind==="pos"&&l.value==="1"));
+      var sourceX=complemented?r.inv:r.normal;
+
+      svg+='<circle cx="'+sourceX+'" cy="'+cy+'" r="4.5" fill="'+signal+'"/>'+
+        '<line x1="'+sourceX+'" y1="'+cy+'" x2="'+finalX+'" y2="'+cy+'" stroke="'+signal+'" stroke-width="2.5"/>'+
+        '<text x="'+(finalX-18)+'" y="'+(cy-12)+'" text-anchor="end" font-size="14" font-weight="700" fill="'+text+'">'+
+        termToExpression(term,names,kind)+'</text>';
+      return;
+    }
+
+    svg+=kind==="sop"?gateAnd(gateX,gy,gateW,gateH,gate,fill):
+                       gateOr(gateX,gy,gateW,gateH,gate,fill);
+
+    // The actual implicant / sum term is shown beside its gate.
+    svg+='<text x="'+(gateX-16)+'" y="'+(gy-12)+'" text-anchor="end" font-size="14" font-weight="700" fill="'+text+'">'+
+      termToExpression(term,names,kind)+'</text>';
+
+    lits.forEach(function(l,k){
+      var pinY=lits.length===1?cy:gy+12+k*((gateH-24)/(lits.length-1));
+      var r=rails[l.index];
+      var complemented=((kind==="sop"&&l.value==="0")||(kind==="pos"&&l.value==="1"));
+      var sourceX=complemented?r.inv:r.normal;
+
+      svg+='<circle cx="'+sourceX+'" cy="'+pinY+'" r="4.5" fill="'+signal+'"/>'+
+        '<line x1="'+sourceX+'" y1="'+pinY+'" x2="'+gateX+'" y2="'+pinY+'" stroke="'+signal+'" stroke-width="2.4"/>';
+    });
+
+    svg+='<line x1="'+(gateX+gateW)+'" y1="'+cy+'" x2="'+finalX+'" y2="'+cy+'" stroke="'+gate+'" stroke-width="2.5"/>';
+  });
+
+  if(kind==="sop") svg+=gateOr(finalX,finalY-finalH/2,finalW,finalH,gate,fill);
+  else svg+=gateAnd(finalX,finalY-finalH/2,finalW,finalH,gate,fill);
+
+  // For direct single-literal terms the wire already ends at the final gate.
+  // For multi-literal terms, their gate outputs also go directly to the final gate.
+  // If a term is direct, its wire is green; otherwise term output is gold.
+  svg+='<line x1="'+(finalX+finalW)+'" y1="'+finalY+'" x2="'+(finalX+180)+'" y2="'+finalY+'" stroke="'+gate+'" stroke-width="2.8"/>'+
+       '<text x="'+(finalX+192)+'" y="'+(finalY+6)+'" font-size="20" font-weight="800" fill="'+text+'">F</text>'+
+       '</svg>';
+
+  document.getElementById("svgbox").innerHTML=svg;
+}
+
+
+
+function copyExpression(){
+ var text="";
+ if(!S.n){
+   var st=document.getElementById("copyStatus");
+   if(st)st.textContent="Generate a result first.";
+   return;
+ }
+ text="F = "+(S.type==="sop"?sopExpr(S.sop,S.names):posExpr(S.pos,S.names));
+ var st=document.getElementById("copyStatus");
+ function ok(){
+   if(st){st.textContent="Expression copied.";setTimeout(function(){st.textContent="";},1600);}
+ }
+ function fail(){
+   if(st){st.textContent="Copy failed — select the expression manually.";setTimeout(function(){st.textContent="";},2200);}
+ }
+ if(navigator.clipboard && navigator.clipboard.writeText){
+   navigator.clipboard.writeText(text).then(ok).catch(function(){
+     var ta=document.createElement("textarea");
+     ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+     document.body.appendChild(ta);ta.select();
+     try{document.execCommand("copy");ok();}catch(e){fail();}
+     ta.remove();
+   });
+ }else{
+   var ta=document.createElement("textarea");
+   ta.value=text;ta.style.position="fixed";ta.style.opacity="0";
+   document.body.appendChild(ta);ta.select();
+   try{document.execCommand("copy");ok();}catch(e){fail();}
+   ta.remove();
+ }
+}
+
+function downloadBlob(blob,filename){
+ var url=URL.createObjectURL(blob);
+ var a=document.createElement("a");
+ a.href=url;a.download=filename;a.style.display="none";
+ document.body.appendChild(a);a.click();
+ setTimeout(function(){URL.revokeObjectURL(url);a.remove();},1000);
+}
+function saveSVG(){
+ var svg=document.getElementById("svg");
+ if(!svg){alert("Generate a circuit first.");return;}
+ var copy=svg.cloneNode(true);
+ var data='<?xml version="1.0" encoding="UTF-8"?>\n'+new XMLSerializer().serializeToString(copy);
+ downloadBlob(new Blob([data],{type:"image/svg+xml"}),"DLD_"+S.out+"_"+S.type+"_circuit.svg");
+}
+function downloadReport(){
+ if(!S.n){alert("Generate a result first.");return;}
+ var copy=document.documentElement.cloneNode(true);
+ var live=copy.querySelector("#svgbox"), current=document.getElementById("svgbox");
+ if(live&&current)live.innerHTML=current.innerHTML;
+ var report='<!doctype html>\n'+copy.outerHTML;
+ downloadBlob(new Blob([report],{type:"text/html"}),"DLD_"+S.out+"_report.html");
+}
+(function(){
+ var saved=localStorage.getItem("dldTheme")||"dark";
+ document.body.classList.toggle("light",saved==="light");
+ var tb=document.getElementById("themeBtn");if(tb)tb.textContent=saved==="light"?"☼":"☾";
+ setVars(3);updateType();
+})();
+
+document.addEventListener("keydown",function(e){
+ if((e.ctrlKey||e.metaKey)&&e.key==="Enter"){
+   e.preventDefault();
+   generate();
+ }
+});
+</script>
+</body>
+</html>
+<style>
+h1{margin-bottom:4px;color:#f6d6a4}
+h2{color:#e7b56e}
+.expr{font:21px Consolas,monospace;background:#11100f;border:1px solid #40372f;color:#ffd18a;padding:14px;border-radius:8px}
+.small{color:#a99c90}
+select:focus,input:focus{outline:2px solid #d28a2e}
+</style>
